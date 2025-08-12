@@ -1,9 +1,5 @@
 {
-  "functions": {
-    "api/auth/callback.js": {
-      "runtime": "node@18.x"
-    }
-  },
+  "version": 2,
   "rewrites": [
     {
       "source": "/auth/callback",
