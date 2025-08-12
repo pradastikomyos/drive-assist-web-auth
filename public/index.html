@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -22,6 +22,7 @@
             border-radius: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
         }
         .logo {
             font-size: 3rem;
@@ -50,54 +51,128 @@
             font-size: 1.2rem;
             margin-top: 1rem;
         }
+        .debug {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            text-align: left;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🚗</div>
+        <div class="logo"></div>
         <h1>Drive Assist</h1>
-        <div class="spinner"></div>
+        <div class="spinner" id="spinner"></div>
         <p id="status">Authenticating...</p>
         <div id="result"></div>
+        <div id="debug" class="debug" style="display: none;"></div>
     </div>
 
     <script>
-        // Handle OAuth callback
+        console.log('Auth callback page loaded');
+        
+        // Get all URL parameters for debugging
         const urlParams = new URLSearchParams(window.location.search);
         const fragment = new URLSearchParams(window.location.hash.substring(1));
         
-        // Get tokens from URL
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+        const debugEl = document.getElementById('debug');
+        const spinnerEl = document.getElementById('spinner');
+        
+        // Debug info
+        const debugInfo = {
+            url: window.location.href,
+            search: window.location.search,
+            hash: window.location.hash,
+            urlParams: Object.fromEntries(urlParams),
+            fragment: Object.fromEntries(fragment)
+        };
+        
+        console.log('Debug info:', debugInfo);
+        debugEl.innerHTML = JSON.stringify(debugInfo, null, 2);
+        
+        // Show debug info after 3 seconds if still processing
+        setTimeout(() => {
+            if (statusEl.textContent === 'Authenticating...') {
+                debugEl.style.display = 'block';
+                statusEl.textContent = 'Debug Mode - Check URL parameters';
+            }
+        }, 3000);
+        
+        // Get tokens from URL (try both query params and hash)
         const accessToken = fragment.get('access_token') || urlParams.get('access_token');
         const refreshToken = fragment.get('refresh_token') || urlParams.get('refresh_token');
         const error = fragment.get('error') || urlParams.get('error');
         const errorDescription = fragment.get('error_description') || urlParams.get('error_description');
-
-        const statusEl = document.getElementById('status');
-        const resultEl = document.getElementById('result');
-
+        const code = urlParams.get('code'); // Authorization code from Supabase
+        
+        console.log('Parsed tokens:', { accessToken, refreshToken, error, errorDescription, code });
+        
         if (error) {
+            console.error('Authentication error:', error, errorDescription);
+            spinnerEl.style.display = 'none';
             statusEl.textContent = 'Authentication Failed';
-            resultEl.innerHTML = `<div class="error">Error: ${errorDescription || error}</div>`;
+            resultEl.innerHTML = <div class="error"> Error: </div>;
+            
         } else if (accessToken) {
+            console.log('Access token found, authentication successful');
+            spinnerEl.style.display = 'none';
             statusEl.textContent = 'Authentication Successful!';
-            resultEl.innerHTML = `
-                <div class="success">✓ Successfully authenticated</div>
-                <p>You can now close this window and return to the app.</p>
-            `;
+            resultEl.innerHTML = 
+                <div class="success"> Successfully authenticated</div>
+                <p>Redirecting back to app...</p>
+            ;
             
             // Try to redirect back to app
             setTimeout(() => {
-                // Try deep link first
+                console.log('Attempting deep link redirect');
                 window.location.href = 'io.supabase.flutterquickstart://login-callback/';
                 
-                // Fallback: close window after 3 seconds
+                // Fallback: show manual close instruction
                 setTimeout(() => {
-                    window.close();
+                    resultEl.innerHTML += '<p><small>If the app didn\'t open automatically, please close this window and return to the app.</small></p>';
                 }, 3000);
             }, 2000);
+            
+        } else if (code) {
+            console.log('Authorization code found:', code);
+            spinnerEl.style.display = 'none';
+            statusEl.textContent = 'Authentication Successful!';
+            resultEl.innerHTML = 
+                <div class="success"> Authorization successful</div>
+                <p>Redirecting back to app...</p>
+            ;
+            
+            // Try to redirect back to app with the code
+            setTimeout(() => {
+                console.log('Attempting deep link redirect with code');
+                window.location.href = io.supabase.flutterquickstart://login-callback/?code=;
+                
+                // Fallback: show manual close instruction
+                setTimeout(() => {
+                    resultEl.innerHTML += '<p><small>If the app didn\'t open automatically, please close this window and return to the app.</small></p>';
+                }, 3000);
+            }, 2000);
+            
         } else {
-            statusEl.textContent = 'Processing...';
-            resultEl.innerHTML = '<p>Please wait while we complete the authentication process.</p>';
+            console.log('No tokens or code found, still processing...');
+            // Keep showing processing state
+            setTimeout(() => {
+                if (!accessToken && !code && !error) {
+                    spinnerEl.style.display = 'none';
+                    statusEl.textContent = 'Waiting for authentication...';
+                    resultEl.innerHTML = 
+                        <div class="error"> No authentication data received</div>
+                        <p>Please try closing this window and signing in again.</p>
+                    ;
+                }
+            }, 10000); // Wait 10 seconds before showing error
         }
     </script>
 </body>
