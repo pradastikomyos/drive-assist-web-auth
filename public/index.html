@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive Assist - Authentication</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success {
+            color: #4ade80;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+        }
+        .error {
+            color: #f87171;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚗</div>
+        <h1>Drive Assist</h1>
+        <div class="spinner"></div>
+        <p id="status">Authenticating...</p>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Handle OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const fragment = new URLSearchParams(window.location.hash.substring(1));
+        
+        // Get tokens from URL
+        const accessToken = fragment.get('access_token') || urlParams.get('access_token');
+        const refreshToken = fragment.get('refresh_token') || urlParams.get('refresh_token');
+        const error = fragment.get('error') || urlParams.get('error');
+        const errorDescription = fragment.get('error_description') || urlParams.get('error_description');
+
+        const statusEl = document.getElementById('status');
+        const resultEl = document.getElementById('result');
+
+        if (error) {
+            statusEl.textContent = 'Authentication Failed';
+            resultEl.innerHTML = `<div class="error">Error: ${errorDescription || error}</div>`;
+        } else if (accessToken) {
+            statusEl.textContent = 'Authentication Successful!';
+            resultEl.innerHTML = `
+                <div class="success">✓ Successfully authenticated</div>
+                <p>You can now close this window and return to the app.</p>
+            `;
+            
+            // Try to redirect back to app
+            setTimeout(() => {
+                // Try deep link first
+                window.location.href = 'io.supabase.flutterquickstart://login-callback/';
+                
+                // Fallback: close window after 3 seconds
+                setTimeout(() => {
+                    window.close();
+                }, 3000);
+            }, 2000);
+        } else {
+            statusEl.textContent = 'Processing...';
+            resultEl.innerHTML = '<p>Please wait while we complete the authentication process.</p>';
+        }
+    </script>
+</body>
+</html>

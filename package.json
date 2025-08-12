@@ -1,0 +1,14 @@
+{
+  "name": "drive-assist-auth-callback",
+  "version": "1.0.0",
+  "description": "Web auth callback for Drive Assist app",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
